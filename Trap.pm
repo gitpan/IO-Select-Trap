@@ -4,7 +4,7 @@ use strict;
 use IO::Select;
 
 use vars qw/$VERSION/;
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 sub new {
 	my $pkg = shift;

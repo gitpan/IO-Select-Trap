@@ -1,38 +1,33 @@
-IO/Select/Trap version 0.01
-===========================
-
-The README is used to introduce the module and provide instructions on
-how to install the module, any machine dependencies it may have (for
-example C compilers and installed libraries) and any other information
-that should be provided before the module is installed.
-
-A README file is required for CPAN modules since CPAN extracts the
-README file from a module distribution so that people browsing the
-archive can use it get an idea of the modules uses. It is usually a
-good idea to provide version information here so that people can
-decide whether fixes for the module are worth downloading.
-
+NAME
+    IO::Select::Trap - IO::Select() functionality on Scalar-based
+    Filehandles
+    
 INSTALLATION
+            perl Makefile.PL
+            make
+            make test
+            make install
 
-To install this module type the following:
+SYNOPSIS
+     use IO::Select::Trap;
+     use IO::String;
+ 
+     my $ios = new IO::String();
+     my $sock = new IO::Socket();
+     my $rb = new IO::Select::Trap(<{ trap=>'Scalar|String' }>, $ios, $sock);
+     my $wb = new IO::Select::Trap(<{ trap=>'Scalar|String' }>, $ios, $sock);
+     my ($rready, $wready) = IO::Select::Trap->select($rb, $wb);
 
-   perl Makefile.PL
-   make
-   make test
-   make install
+DESCRIPTION
+    IO::Select::Trap is a wrapper for "IO::Select" which enables use of the
+    "IO::Select->select()" method on IO::Scalar or IO::String
+    object/filehandles. Other filehandle object types (ie IO::Socket) are
+    passed through to IO::Select for processing. Most of the IO::Select
+    interface is supported.
 
-DEPENDENCIES
+AUTHOR & COPYRIGHT
+    Scott Scecina, <scotts@inmind.com>
 
-This module requires these other modules and libraries:
-
-  blah blah blah
-
-COPYRIGHT AND LICENCE
-
-Put the correct copyright and licence information here.
-
-Copyright (C) 2001 A. U. Thor
-
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
-
+    Except where otherwise noted, IO::Select::Trap is Copyright 2001 Scott
+    Scecina. All rights reserved. IO::Select::Trap is free software; you may
+    redistribute it and/or modify it under the same terms as Perl itself.
