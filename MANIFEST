@@ -4,3 +4,4 @@ MANIFEST
 README
 test.pl
 Trap.pm
+META.yml                                 Module meta-data (added by MakeMaker)

@@ -2,9 +2,10 @@ package IO::Select::Trap;
 
 use strict;
 use IO::Select;
+use Carp;
 
 use vars qw/$VERSION/;
-$VERSION = '0.03';
+$VERSION = '0.032';
 
 sub new {
 	my $pkg = shift;
@@ -23,7 +24,7 @@ sub new {
 sub _update {
 	my ($self) = shift;
 	my $add = shift eq 'add';
-	
+
 	my @pthru;
 	foreach my $h (@_) {
 		next unless defined $h;
@@ -31,7 +32,7 @@ sub _update {
 			push @pthru, $h;
 			next;
 		}
-				
+
 		if ($add) {
 				$self->{handles}->{\*{$h}} = $h;
 		} else {
@@ -41,9 +42,15 @@ sub _update {
 	return \@pthru;
 }
 
-sub _trapped { 
+sub _trapped {
 	my ($self, $h) = @_;
-	(ref $h) =~ /$self->{traps}/i;
+	if ((ref $h) =~ /$self->{traps}/i) {
+		carp (ref $h)." is trapped.";
+		return 1;
+	} else {
+		carp (ref $h)." is NOT trapped.";
+		return 0;
+	}
 }
 
 sub _count {
@@ -57,7 +64,7 @@ sub _can_read {
 	my @result;
 	while (my ($k, $h) = each %{$self->{handles}}) {
 		push @result, $h if (length ${$h->sref});
-	} 
+	}
 	return wantarray ? @result : \@result;
 }
 
@@ -67,7 +74,7 @@ sub _can_write {
 	my @result;
 	while (my ($k, $h) = each %{$self->{handles}}) {
 		push @result, $h if ($h->opened);
-	} 
+	}
 	return wantarray ? @result : \@result;
 }
 
@@ -89,7 +96,7 @@ sub select {
 	shift if defined $_[0] && !ref($_[0]);
 	my ($r, $w, $e, $t) = @_;
 	my (@RR, @WR, @ER);
-	
+
 	my $rready = defined $r ? $r->_can_read : undef;
 	my $wready = defined $w ? $w->_can_write : undef;
 	my $eready = defined $e ? $e->_has_exception : undef;
@@ -101,11 +108,11 @@ sub select {
 	my ($ir) = defined $r ? $r->{ioselect} : undef;
 	my ($iw) = defined $w ? $w->{ioselect} : undef;
 	my ($ie) = defined $e ? $e->{ioselect} : undef;
-	
+
 	if (@RR || @WR || @ER) {
 		$t = 0 unless (defined $t); # Force non-blocking select()
 	}
-	
+
 	($rready, $wready, $eready) = IO::Select->select($ir, $iw, $ie, $t);
 	push @RR, @$rready if defined $rready;
 	push @WR, @$wready if defined $wready;
@@ -125,8 +132,8 @@ sub can_read {
 	my @hready = $self->_can_read();
 	$t = 0 if (! defined $t && @hready);
 	my @iready = $self->{ioselect}->can_read($t);
-	return 
-		@iready ? 
+	return
+		@iready ?
 			@hready ? (@iready, @hready) : @iready
 				: @hready;
 }
@@ -136,8 +143,8 @@ sub can_write {
 	my @hready = $self->_can_write();
 	$t = 0 if (! defined $t && @hready);
 	my @iready = $self->{ioselect}->can_write($t);
-	return 
-		@iready ? 
+	return
+		@iready ?
 			@hready ? (@iready, @hready) : @iready
 				: @hready;
 }
@@ -147,8 +154,8 @@ sub has_exception {
 	my @hready = $self->_has_exception();
 	$t = 0 if (! defined $t && @hready);
 	my @iready = $self->{ioselect}->has_exception($t);
-	return 
-		@iready ? 
+	return
+		@iready ?
 			@hready ? (@iready, @hready) : @iready
 				: @hready;
 }
@@ -176,7 +183,7 @@ IO::Select::Trap - IO::Select() functionality on Scalar-based Filehandles
 
  use IO::Select::Trap;
  use IO::String;
- 
+
  my $ios = new IO::String();
  my $sock = new IO::Socket();
  my $rb = new IO::Select::Trap(<{ trap=>'Scalar|String' }>, $ios, $sock);
@@ -185,13 +192,13 @@ IO::Select::Trap - IO::Select() functionality on Scalar-based Filehandles
 
 =head1 DESCRIPTION
 
-IO::Select::Trap is a wrapper for C<IO::Select> which enables use of the 
+IO::Select::Trap is a wrapper for C<IO::Select> which enables use of the
 C<IO::Select-E<gt>select()> method on IO::Scalar or IO::String
 object/filehandles. Other filehandle object types (ie IO::Socket) are passed
-through to IO::Select for processing.  Most of the IO::Select interface is 
+through to IO::Select for processing.  Most of the IO::Select interface is
 supported.
 
-An IO::String/Scalar object/filehandle is ready for reading when it contains 
+An IO::String/Scalar object/filehandle is ready for reading when it contains
 some amount of data.  It will always be ready for writing.  Also, IO::String/Scalar
 objects will *never* block.
 
@@ -212,7 +219,7 @@ REGEX that specifies the IO objects to trap.
 =head1 LIMITATIONS
 
 Currently, the select(), can_read(), etc. methods only support
-trapped IO::Scalar or IO::String objects.  Other trapped objects will 
+trapped IO::Scalar or IO::String objects.  Other trapped objects will
 probably break the tests that the methods use to determine read/write ability.
 
 The is a bug when using IO::Scalar objects, in that two IO::Scalars can't be
@@ -220,9 +227,9 @@ compared.  Eg:
 
   $ios = new IO::Scalar;
   $ios2 = $ios;
-  
+
   if ($ios == $ios2) { #...
-  
+
 .. causes a runtime error.  A fix has been sent to to the author, and should be
 included in a future version.
 
@@ -230,9 +237,9 @@ included in a future version.
 
 Scott Scecina, E<lt>scotts@inmind.comE<gt>
 
-Except where otherwise noted, IO::Select::Trap is 
-Copyright 2001 Scott Scecina. All rights reserved. 
-IO::Select::Trap is free software; you may redistribute 
+Except where otherwise noted, IO::Select::Trap is
+Copyright 2001 Scott Scecina. All rights reserved.
+IO::Select::Trap is free software; you may redistribute
 it and/or modify it under the same terms as Perl itself.
 
 =head1 SEE ALSO
